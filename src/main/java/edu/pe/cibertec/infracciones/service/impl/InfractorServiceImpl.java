@@ -66,5 +66,20 @@ public class InfractorServiceImpl implements IInfractorService {
         dto.setEmail(infractor.getEmail());
         dto.setBloqueado(infractor.isBloqueado());
         return dto;
+
+    }
+
+    @Override
+    public void verificarBloqueo(Long infractorId) {
+        Infractor infractor = infractorRepository.findById(infractorId)
+                .orElseThrow(() -> new RuntimeException("Infractor no encontrado"));
+
+        int multasVencidas = infractorRepository
+                .countByMultas("VENCIDA", infractorId);
+
+        if (multasVencidas >= 3) {
+            infractor.setBloqueado(true);
+            infractorRepository.save(infractor);
+        }
     }
 }

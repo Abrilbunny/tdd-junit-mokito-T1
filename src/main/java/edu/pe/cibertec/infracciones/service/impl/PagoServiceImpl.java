@@ -25,31 +25,44 @@ public class PagoServiceImpl implements IPagoService {
     @Override
     public PagoResponseDTO procesarPago(Long multaId) {
         Multa multa = multaRepository.findById(multaId)
-                .orElseThrow(() -> new MultaNotFoundException(multaId));
+                .orElseThrow(() -> new RuntimeException("Multa no encontrada"));
 
-        if (multa.getEstado() == EstadoMulta.PAGADA)
-            throw new PagoYaRealizadoException(multaId);
+        if (multa.getEstado() == EstadoMulta.PAGADA) {
+            throw new RuntimeException("Pago ya realizado");
+        }
+
+        double montoOriginal = multa.getMonto();
+        double descuento = 0;
+        double recargo = 0;
 
         LocalDate hoy = LocalDate.now();
-        long diasDesdeEmision = ChronoUnit.DAYS.between(multa.getFechaEmision(), hoy);
+        long dias = ChronoUnit.DAYS.between(multa.getFechaEmision(), hoy);
 
-        double monto = multa.getMonto();
-        double descuento = diasDesdeEmision <= 5 ? monto * 0.20 : 0.0;
-        double recargo = hoy.isAfter(multa.getFechaVencimiento()) ? monto * 0.15 : 0.0;
-        double montoPagado = monto - descuento + recargo;
+        if (dias >= 0 && dias <= 5) {
+            descuento = montoOriginal * 0.20;
+        }
+
+        if (multa.getEstado() == EstadoMulta.VENCIDA) {
+            recargo = montoOriginal * 0.15;
+        }
+
+        double montoFinal = montoOriginal - descuento + recargo;
 
         Pago pago = new Pago();
-        pago.setMontoPagado(montoPagado);
-        pago.setFechaPago(hoy);
-        pago.setDescuentoAplicado(descuento);
-        pago.setRecargo(recargo);
         pago.setMulta(multa);
+        pago.setMontoPagado(montoFinal);
+        pago.setFechaPago(hoy);
+
         pagoRepository.save(pago);
 
         multa.setEstado(EstadoMulta.PAGADA);
         multaRepository.save(multa);
 
-        return mapToResponse(pago);
+        PagoResponseDTO dto = new PagoResponseDTO();
+        dto.setMontoPagado(montoFinal);
+        dto.setFechaPago(hoy);
+
+        return dto;
     }
 
     @Override
@@ -70,4 +83,6 @@ public class PagoServiceImpl implements IPagoService {
         dto.setMultaId(pago.getMulta().getId());
         return dto;
     }
+
+
 }
