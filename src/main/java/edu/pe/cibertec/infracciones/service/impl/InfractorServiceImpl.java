@@ -4,6 +4,7 @@ import edu.pe.cibertec.infracciones.dto.InfractorRequestDTO;
 import edu.pe.cibertec.infracciones.dto.InfractorResponseDTO;
 import edu.pe.cibertec.infracciones.exception.InfractorNotFoundException;
 import edu.pe.cibertec.infracciones.exception.VehiculoNotFoundException;
+import edu.pe.cibertec.infracciones.model.EstadoMulta;
 import edu.pe.cibertec.infracciones.model.Infractor;
 import edu.pe.cibertec.infracciones.model.Vehiculo;
 import edu.pe.cibertec.infracciones.repository.InfractorRepository;
@@ -12,7 +13,7 @@ import edu.pe.cibertec.infracciones.service.IInfractorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
-
+import edu.pe.cibertec.infracciones.repository.MultaRepository;
 @Service
 @RequiredArgsConstructor
 public class InfractorServiceImpl implements IInfractorService {
@@ -74,8 +75,7 @@ public class InfractorServiceImpl implements IInfractorService {
         Infractor infractor = infractorRepository.findById(infractorId)
                 .orElseThrow(() -> new RuntimeException("Infractor no encontrado"));
 
-        int multasVencidas = infractorRepository
-                .countByMultas("VENCIDA", infractorId);
+        int multasVencidas = infractorRepository.contarMultasVencidas(infractorId);
 
         if (multasVencidas >= 3) {
             infractor.setBloqueado(true);
